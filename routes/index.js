@@ -35,5 +35,9 @@ router.delete("/equipamentos", equipamentoController.deletarTodos);
 router.post("/emprestimos", emprestimoController.criar);
 router.get("/emprestimos", emprestimoController.listar);
 router.put("/emprestimos/:id/devolver", emprestimoController.devolver);
+router.get("/emprestimos/:id", emprestimoController.buscarPorId);
+router.delete("/emprestimos/:id", emprestimoController.deletarPorId); // Rota para deletar um empréstimo por ID
+router.delete("/emprestimos", emprestimoController.deletarTodos); // Rota para deletar todos os empréstimos
+
 
 module.exports = router;

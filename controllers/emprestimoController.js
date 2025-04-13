@@ -1,37 +1,100 @@
 const Emprestimo = require("../models/Emprestimo");
 
-exports.criar = async (req, res) => {
-  try {
-    const { funcionario_id, equipamento_id, data_retirada } = req.body;
-    const emprestimo = await Emprestimo.create({
-      funcionario_id,
-      equipamento_id,
-      data_retirada,
-      status: "Em andamento"
-    });
+const emprestimoController = {
+  // Criar um novo empréstimo
+  async criar(req, res) {
+    try {
+      const novoEmprestimo = await Emprestimo.create(req.body);
+      res.status(201).json(novoEmprestimo);
+    } catch (error) {
+      console.error("Erro ao criar empréstimo:", error);
+      res.status(400).json({ error: "Erro ao criar empréstimo." });
+    }
+  },
 
-    res.status(201).json(emprestimo);
-  } catch (err) {
-    res.status(500).json({ erro: "Erro ao registrar empréstimo", detalhes: err.message });
+  // Listar empréstimos detalhados
+  async listar(req, res) {
+    try {
+      const emprestimos = await Emprestimo.findAllDetalhado();
+      res.json(emprestimos);
+    } catch (error) {
+      console.error("Erro ao listar empréstimos:", error);
+      res.status(500).json({ error: "Erro ao listar empréstimos." });
+    }
+  },
+
+  // Buscar empréstimo por ID
+  async buscarPorId(req, res) {
+    try {
+      const id = req.params.id;
+      const emprestimo = await Emprestimo.findById(id);
+      if (!emprestimo) {
+        return res.status(404).json({ error: "Empréstimo não encontrado." });
+      }
+      res.json(emprestimo);
+    } catch (error) {
+      console.error("Erro ao buscar empréstimo:", error);
+      res.status(500).json({ error: "Erro ao buscar empréstimo." });
+    }
+  },
+
+  // Devolver o empréstimo (atualiza o status e a data de devolução)
+  async devolver(req, res) {
+    try {
+      const id = req.params.id;
+      const data_devolucao = new Date().toISOString().split('T')[0]; // Formato YYYY-MM-DD
+      const status = "devolvido";
+
+      // Busca o empréstimo atual
+      const emprestimo = await Emprestimo.findById(id);
+      if (!emprestimo) {
+        return res.status(404).json({ error: "Empréstimo não encontrado." });
+      }
+
+      // Atualiza o empréstimo com a data de devolução e status
+      const atualizado = await Emprestimo.update(id, {
+        funcionario_id: emprestimo.funcionario_id,
+        equipamento_id: emprestimo.equipamento_id,
+        data_retirada: emprestimo.data_retirada,
+        data_devolucao,
+        status
+      });
+
+      res.json(atualizado);
+    } catch (error) {
+      console.error("Erro ao devolver empréstimo:", error);
+      res.status(500).json({ error: "Erro ao devolver empréstimo." });
+    }
+  },
+
+  // Deletar um empréstimo por ID
+  async deletarPorId(req, res) {
+    try {
+      const id = req.params.id;
+      const emprestimo = await Emprestimo.findById(id);
+      if (!emprestimo) {
+        return res.status(404).json({ error: "Empréstimo não encontrado." });
+      }
+
+      // Deleta o empréstimo
+      await Emprestimo.delete(id);
+      res.status(200).json({ message: "Empréstimo deletado com sucesso." });
+    } catch (error) {
+      console.error("Erro ao deletar empréstimo:", error);
+      res.status(500).json({ error: "Erro ao deletar empréstimo." });
+    }
+  },
+
+  // Deletar todos os empréstimos
+  async deletarTodos(req, res) {
+    try {
+      await Emprestimo.deleteAll();
+      res.status(200).json({ message: "Todos os empréstimos foram deletados." });
+    } catch (error) {
+      console.error("Erro ao deletar todos os empréstimos:", error);
+      res.status(500).json({ error: "Erro ao deletar todos os empréstimos." });
+    }
   }
 };
 
-exports.listar = async (req, res) => {
-  try {
-    const emprestimos = await Emprestimo.findAll();
-    res.json(emprestimos);
-  } catch (err) {
-    res.status(500).json({ erro: "Erro ao listar empréstimos" });
-  }
-};
-
-exports.devolver = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { data_devolucao } = req.body;
-    const devolvido = await Emprestimo.marcarDevolucao(id, data_devolucao);
-    res.json(devolvido);
-  } catch (err) {
-    res.status(500).json({ erro: "Erro ao devolver equipamento", detalhes: err.message });
-  }
-};
+module.exports = emprestimoController;
